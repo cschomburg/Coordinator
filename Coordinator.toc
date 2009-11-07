@@ -1,0 +1,14 @@
+## Interface: 30200
+## Title: Coordinator
+## Author: Cargor
+## Version: 1.0
+## X-eMail: xconstruct@gmail.com
+## X-Website: http://www.xconstruct.net
+## Notes: Coordinate addon.
+
+libs\LibStub\LibStub.lua
+libs\CallbackHandler-1.0\CallbackHandler-1.0.lua
+libs\LibCamera-1.0\LibCamera-1.0.lua
+
+core.lua
+mapSize.lua
