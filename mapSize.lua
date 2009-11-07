@@ -3,6 +3,10 @@ local WorldMapSize
 function Coordinator:ToYards(x, y, z)
 	local cont = GetCurrentMapContinent()
 	local zone = GetMapInfo()
+	if(zone == "WarsongGulch") then
+		return 1000*x, 1000*y
+	end
+
 	local data = WorldMapSize[cont] and WorldMapSize[cont].zoneData and WorldMapSize[cont].zoneData[zone]
 	if(not data) then return end
 

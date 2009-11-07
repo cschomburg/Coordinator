@@ -33,7 +33,7 @@ local function rotate(x, y, angle)
 end
 
 function Coordinator:CreateTarget(name, x, y, z)
-	local coord = {x=x, y=y, z=z, name=name}
+	local coord = {x=x, y=y, z=(z or 0), name=name}
 	coords[coord] = true
 	return setmetatable(coord, TargetCoordinate)
 end
@@ -68,9 +68,12 @@ local function updateIndicator(coord, dPitch, dYaw, dDist)
 	coord.ind:SetScale(scale)
 end
 
+local plrInd
+
 function Coordinator:Update()
 	local plrX, plrY = GetPlayerMapPosition("player")
 	local plrZ = 0
+
 	local camPitch, camYaw, camDist = LC.GetCameraPosition()
 	camPitch, camYaw = deg(camPitch), deg(camYaw)
 
@@ -105,7 +108,6 @@ function Coordinator:Update()
 end
 
 LC.RegisterCallback(Coordinator, "LibCamera_Update", Coordinator.Update, Coordinator)
-Coordinator:RegisterEvent("WORLD_MAP_UPDATE")
 Coordinator:SetScript("OnUpdate", Coordinator.Update)
 
 function TargetCoordinate:Enable()
