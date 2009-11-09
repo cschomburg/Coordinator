@@ -13,4 +13,6 @@ libs\LibCamera-1.0\LibCamera-1.0.lua
 core.lua
 mapSize.lua
 
+styles\default.lua
+
 modules\flags.lua

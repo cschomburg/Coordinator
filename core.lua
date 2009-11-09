@@ -1,105 +1,91 @@
 local LC = LibStub("LibCamera-1.0")
 
 local Coordinator = CreateFrame("Frame", "Coordinator", UIParent)
-Coordinator:SetAlpha(0.8)
+Coordinator:Hide()
 
-local coords, indicators = {}, {}
+local numActive = 0
+local active, styles, unused = {}, {}, {}
+Coordinator.Styles = styles
 
 local TargetCoordinate = {}
 TargetCoordinate.__index = TargetCoordinate
 
-local function createIndicator()
-	local ind = CreateFrame("Frame", nil, UIParent)
-	ind:SetWidth(50)
-	ind:SetHeight(50)
+local defaultStyle
 
-	local tex = ind:CreateTexture(nil, "BACKGROUND")
-	tex:SetAlpha(0.5)
-	tex:SetAllPoints()
-	tex:SetTexture([[Interface\AddOns\Coordinator\hud]])
-
-	local dist = ind:CreateFontString(nil, "BACKGROUND", "ChatFontSmall")
-	dist:SetPoint("CENTER", 0, -3)
-
-	local name = ind:CreateFontString(nil, "BACKGROUND", "ChatFontSmall")
-	name:SetPoint("RIGHT", ind, "TOPLEFT", 0, 0)
-
-	ind.tex, ind.dist, ind.name = tex, dist, name
-	return ind
-end
-
-local function rotate(x, y, angle)
-	return x*cos(angle) - y*sin(angle), y*cos(angle) + x*sin(angle)
+function Coordinator:RegisterStyle(name, style)
+	defaultStyle = defaultStyle or name
+	styles[name] = style
+	unused[name] = {}
 end
 
 function Coordinator:CreateTarget(name, x, y, z)
-	local coord = {x=x, y=y, z=(z or 0), name=name}
-	coords[coord] = true
-	return setmetatable(coord, TargetCoordinate)
+	local coord = setmetatable({x=x, y=y, z=(z or 0), name=name, style=defaultStyle}, TargetCoordinate)
+	coord:Enable()
+	return coord
 end
 
 local function removeIndicator(coord)
-	if(coord.ind) then
-		local ind = coord.ind
-		coord.ind = nil
-		ind:Hide()
-		indicators[#indicators+1] = ind
-	end
+	local ind = coord.ind
+	if(not ind) then return end
+	coord.ind = nil
+	ind:Hide()
+	tinsert(unused[coord.style], ind)
 end
-
-local function updateIndicator(coord, dPitch, dYaw, dDist)
-	if(not coord.ind) then
-		coord.ind = tremove(indicators) or createIndicator()
-		coord.ind.name:SetText(coord.name)
-		coord.ind:SetAlpha(coord.alpha)
-		coord.ind.dist:SetTextColor(coord.r, coord.g, coord.b)
-		coord.ind.name:SetTextColor(coord.r, coord.g, coord.b)
-		coord.ind.tex:SetVertexColor(coord.r, coord.g, coord.b)
-		coord.ind:Show()
-	end
-
-	local screenX = tan(dYaw) * WorldFrame:GetWidth()
-	local screenY = tan(dPitch) * WorldFrame:GetWidth()
-	local scale = 0.8+0.7*max((300-dDist)/300, 0)
-
-	coord.ind.dist:SetFormattedText("%.1f", dDist)
-	coord.ind:ClearAllPoints()
-	coord.ind:SetPoint("CENTER", UIParent, "CENTER", screenX/scale, screenY/scale)
-	coord.ind:SetScale(scale)
-end
-
-local plrInd
 
 function Coordinator:Update()
 	local plrX, plrY = GetPlayerMapPosition("player")
 	local plrZ = 0
 
-	local camPitch, camYaw, camDist = LC.GetCameraPosition()
+	local camRoll, camPitch, camYaw, camDist = 0, LC.GetCameraPosition()
 	camPitch, camYaw = deg(camPitch), deg(camYaw)
 
+	-- If anyone knows why these need to be swapped ...
+	local tmp = camRoll
+	local camRoll, camPitch = camPitch, tmp
+
+	-- Reducing CPU time as much as possible
+	local sPitch, cPitch = sin(camPitch), cos(camPitch)
+	local sRoll, cRoll = sin(camRoll), cos(camRoll)
+	local sYaw, cYaw = sin(camYaw), cos(camYaw)
+
+	-- Generating the camera coordinates relative to player, axes world
 	local camX, camY, camZ = 0, camDist, 0
-	camY, camZ = rotate(camY, camZ, camPitch)
-	camX, camY = rotate(camX, camY, -camYaw)
-	
-	local uiSize = UIParent:GetWidth()/UIParent:GetScale()/2
+	camY, camZ = camY*cRoll - camZ*sRoll, camZ*cRoll + camY*sRoll
+	camX, camY = camX*cYaw - camY*sYaw, camY*cYaw + camX*sYaw
 
-	for coord in pairs(coords) do
-		local dX, dY, dZ = self:ToYards(coord.x-plrX, coord.y-plrY, coord.z-plrZ)
-		if(dX) then
-			dX, dY, dZ = dX-camX, dY-camY, dZ-camZ
-			local dPlaneDist = (dX^2+dY^2)^0.5
-			local dDist = (dX^2+dY^2+dZ^2)^0.5
+	-- Blizz' viewer is 2 yards behind the screen, creating a field of view of 53°
+	local eX, eY, eZ = 0, 2, 0
 
-			local dYaw = -atan(dX/dY) + camYaw
-			if(dY > 0) then dYaw = dYaw+180 end
-			if(dYaw > 180) then dYaw = dYaw-360 end
+	for coord in pairs(active) do
+		if(coord.x and coord.y and coord.z) then
+			local dX, dY, dZ = self:ToYards(-coord.x+plrX, coord.y-plrY, coord.z-plrZ)
+			if(dX and dY and dZ) then
+				-- Relative to camera, axes still world
+				dX, dY, dZ = dX-camX, dY-camY, dZ-camZ
 
-			local dPitch = atan(dZ/dPlaneDist) + camPitch
+				-- Rotate axes relative to camera - the Y-axis serves as the distance, going in the screen
+				local cX = cPitch * (sYaw * dY + cYaw * dX) - sPitch * dZ
+				local cY = sRoll * (cPitch * dZ + sPitch * (sYaw * dY + cYaw * dX)) + cRoll * (cYaw * dY - sYaw * dX)
+				local cZ = cRoll * (cPitch * dZ + sPitch * (sYaw * dY + cYaw * dX)) - sRoll * (cYaw * dY - sYaw * dX)
 
-			if(abs(dYaw) > 90) then
-				removeIndicator(coord)
+				-- Now get the screen coordinates; screenY is the camera 3D Z-coordinate, remember?
+				local screenX = (cX - eX) * (eY/cY)			* WorldFrame:GetWidth()/2
+				local screenY = (cZ - eZ) * (eY/cY)			* -WorldFrame:GetWidth()/2
+
+				if(cY > 0) then
+					removeIndicator(coord)
+				else
+					local dDist = (cX^2 + cY^2 + cZ^2)^0.5
+					local style = coord.style
+					local styleTbl = styles[style]
+					if(not coord.ind) then
+						coord.ind = tremove(unused[style]) or styleTbl.Create()
+						styleTbl.Init(coord.ind, coord)
+					end
+					styleTbl.Update(coord.ind, screenX, screenY, dDist)
+				end
 			else
-				updateIndicator(coord, dPitch, dYaw, dDist)
+				removeIndicator(coord)
 			end
 		else
 			removeIndicator(coord)
@@ -107,41 +93,29 @@ function Coordinator:Update()
 	end
 end
 
-LC.RegisterCallback(Coordinator, "LibCamera_Update", Coordinator.Update, Coordinator)
+LC.RegisterCallback(Coordinator, "LibCamera_Update", function() end, Coordinator)
 Coordinator:SetScript("OnUpdate", Coordinator.Update)
 
 function TargetCoordinate:Enable()
-	coords[self] = true
+	if(active[self]) then return end
+
+	active[self] = true
+	numActive = numActive + 1
+	if(numActive == 1) then
+		Coordinator:Show()
+	end
 end
 
 function TargetCoordinate:Disable()
-	coords[self] = nil
+	if(not active[self]) then return end
+
+	active[self] = nil
 	removeIndicator(self)
+	numActive = numActive - 1
+	if(numActive == 0) then
+		Coordinator:Hide()
+	end
 end
 
-function TargetCoordinate:SetColor(r,g,b)
-	self.r, self.g, self.b = r,g,b
-	local ind = self.ind
-	if(not ind) then return end
-
-	ind.dist:SetTextColor(self.r, self.g, self.b)
-	ind.name:SetTextColor(self.r, self.g, self.b)
-	ind.tex:SetVertexColor(self.r, self.g, self.b)
-end
-
-function TargetCoordinate:SetName(name)
-	self.name = name
-	if(not self.ind) then return end
-	ind.name:SetText(name)
-end
-
-function TargetCoordinate:SetAlpha(alpha)
-	self.alpha = alpha
-	if(not self.ind) then return end
-	ind:SetAlpha(self.alpha)
-end
-
-TargetCoordinate.r = 0.8
-TargetCoordinate.g = 0.8
-TargetCoordinate.b = 1
-TargetCoordinate.alpha = 0.8
+-- Everyone needs a test gnome, mine is in thousand needles
+--Coordinator:CreateTarget("Gnome", 0.81729340553284, 0.76272523403168)
