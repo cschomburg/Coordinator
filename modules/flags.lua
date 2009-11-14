@@ -37,6 +37,7 @@ module:SetScript("OnUpdate", function(self)
 			else
 				coords.r, coords.g, coords.b = 1, 1, 1
 			end
+			coords:Init()
 		end
 
 		i = i+1

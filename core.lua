@@ -1,10 +1,10 @@
-local LC = LibStub("LibCamera-1.0")
+local LSC = LibStub("LibScreenCoords-1.0")
 
 local Coordinator = CreateFrame("Frame", "Coordinator", UIParent)
 Coordinator:Hide()
 
 local numActive = 0
-local active, styles, unused = {}, {}, {}
+local styles = {}
 Coordinator.Styles = styles
 
 local TargetCoordinate = {}
@@ -16,12 +16,6 @@ function Coordinator:RegisterStyle(name, style)
 	defaultStyle = defaultStyle or name
 	styles[name] = style
 	unused[name] = {}
-end
-
-function Coordinator:CreateTarget(name, x, y, z)
-	local coord = setmetatable({x=x, y=y, z=(z or 0), name=name, style=defaultStyle}, TargetCoordinate)
-	coord:Enable()
-	return coord
 end
 
 local function removeIndicator(coord)
@@ -53,8 +47,10 @@ function Coordinator:Update()
 	camY, camZ = camY*cRoll - camZ*sRoll, camZ*cRoll + camY*sRoll
 	camX, camY = camX*cYaw - camY*sYaw, camY*cYaw + camX*sYaw
 
-	-- Blizz' viewer is 2 yards behind the screen, creating a field of view of 53°
-	local eX, eY, eZ = 0, 2, 0
+	-- Blizz' viewer is by default 2 yards behind the screen, creating a field of view of 53°
+	local eX, eY, eZ = 0, WorldFrame:GetHeight()/768*2, 0
+
+	local factor = WorldFrame:GetHeight()/768
 
 	for coord in pairs(active) do
 		if(coord.x and coord.y and coord.z) then
@@ -69,8 +65,8 @@ function Coordinator:Update()
 				local cZ = cRoll * (cPitch * dZ + sPitch * (sYaw * dY + cYaw * dX)) - sRoll * (cYaw * dY - sYaw * dX)
 
 				-- Now get the screen coordinates; screenY is the camera 3D Z-coordinate, remember?
-				local screenX = (cX - eX) * (eY/cY)			* WorldFrame:GetWidth()/2
-				local screenY = (cZ - eZ) * (eY/cY)			* -WorldFrame:GetWidth()/2
+				local screenX = (cX - eX) * (eY/cY)			* WorldFrame:GetWidth()*factor/2
+				local screenY = (cZ - eZ) * (eY/cY)			* -WorldFrame:GetWidth()*factor/2
 
 				if(cY > 0) then
 					removeIndicator(coord)
@@ -95,27 +91,6 @@ end
 
 LC.RegisterCallback(Coordinator, "LibCamera_Update", function() end, Coordinator)
 Coordinator:SetScript("OnUpdate", Coordinator.Update)
-
-function TargetCoordinate:Enable()
-	if(active[self]) then return end
-
-	active[self] = true
-	numActive = numActive + 1
-	if(numActive == 1) then
-		Coordinator:Show()
-	end
-end
-
-function TargetCoordinate:Disable()
-	if(not active[self]) then return end
-
-	active[self] = nil
-	removeIndicator(self)
-	numActive = numActive - 1
-	if(numActive == 0) then
-		Coordinator:Hide()
-	end
-end
 
 -- Everyone needs a test gnome, mine is in thousand needles
 --Coordinator:CreateTarget("Gnome", 0.81729340553284, 0.76272523403168)
