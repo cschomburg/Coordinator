@@ -1,15 +1,22 @@
+local lib = LibStub("LibCoordinator-1.0", 1)
+
+-- Making Coordinator global,
+-- the library acts basically as the core
+Coordinator = lib
+
 local WorldMapSize
 
-function Coordinator:ToYards(x, y, z)
+function lib.ToYards(relToPlayer, x, y, z)
 	local cont = GetCurrentMapContinent()
 	local zone = GetMapInfo()
-	if(zone == "WarsongGulch") then
-		return 1000*x, 1000*y, z
+
+	if(not relToPlayer) then
+		local plrX, plrY = GetPlayerMapPosition("player")
+		x, y = -x+plrX, y-plrY
 	end
 
 	local data = WorldMapSize[cont] and WorldMapSize[cont].zoneData and WorldMapSize[cont].zoneData[zone]
-	if(not data) then return end
-
+	if(not data) then return x*1000, y*1000, z end
 	return data.width*x, data.height*y, z
 end
 

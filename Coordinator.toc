@@ -9,10 +9,12 @@
 libs\LibStub\LibStub.lua
 libs\CallbackHandler-1.0\CallbackHandler-1.0.lua
 libs\LibCamera-1.0\LibCamera-1.0.lua
+libs\LibCoordinator-1.0\LibCoordinator-1.0.lua
 
-core.lua
-mapSize.lua
+yards.lua
 
-styles\default.lua
+types\target.lua
+types\line.lua
+types\cube.lua
 
 modules\flags.lua

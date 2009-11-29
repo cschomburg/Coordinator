@@ -17,27 +17,23 @@ module:SetScript("OnUpdate", function(self)
 	local flagX, flagY, flagToken = GetBattlefieldFlagPosition(i)
 	while(flagX and flagX ~= 0) do
 
-		local coords = flagCoords[i]
-		if(not coords) then
-			coords = Coordinator:CreateTarget("Flag", flagX, flagY)
-			flagCoords[i] = coords
+		local target = flagTargets[i]
+		if(not target) then
+			target = Coordinator.DisplayCoordinate("Flag", flagX, flagY)
+			flagTargets[i] = target
 		else
-			coords.x, coords.y = flagX, flagY
+			target.x, target.y = flagX, flagY
 			if(i > last) then
-				coords:Enable()
+				Coordinator.EnableOverlay(target)
 			end
 		end
 
-		if(flagToken ~= coords.flagToken) then
-			coords.flagToken = flagToken
-			if(flagToken == "AllianceFlag") then
-				coords.r, coords.g, coords.b = 0.5, 0.5, 1
-			elseif(flagToken == "HordeFlag") then
-				coords.r, coords.g, coords.b = 1, 0.5, 0.5
-			else
-				coords.r, coords.g, coords.b = 1, 1, 1
-			end
-			coords:Init()
+		if(flagToken == "AllianceFlag") then
+			coords.r, coords.g, coords.b = 0.5, 0.5, 1
+		elseif(flagToken == "HordeFlag") then
+			coords.r, coords.g, coords.b = 1, 0.5, 0.5
+		else
+			coords.r, coords.g, coords.b = 1, 1, 1
 		end
 
 		i = i+1
@@ -47,7 +43,7 @@ module:SetScript("OnUpdate", function(self)
 
 	if(last and last > i) then
 		for j=i+1, last do
-			flagCoords[j]:Disable()
+			Coordinator.DisableOverlay(flagCoords[j])
 		end
 	end
 	last = i
