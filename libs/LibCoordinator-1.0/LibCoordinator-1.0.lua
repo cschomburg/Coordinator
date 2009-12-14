@@ -53,8 +53,6 @@ function lib.DisplayCoordinate(...) return lib.CreateOverlay(defaultType, ...) e
 
 local sPitch, cPitch, sRoll, cRoll, sYaw, cYaw
 local camX, camY, camZ
-local eX, eY, eZ
-local factor
 
 function lib.WorldToScreen(x, y, z)
 	-- Relative to camera, axes still world
@@ -66,8 +64,8 @@ function lib.WorldToScreen(x, y, z)
 	local cZ = cRoll * (cPitch * dZ + sPitch * (sYaw * dY + cYaw * dX)) - sRoll * (cYaw * dY - sYaw * dX)
 
 	-- Now get the screen coordinates; screenY is the camera 3D Z-coordinate, remember?
-	local screenX = (cX - eX) * (eY/cY)			* WorldFrame:GetWidth()*factor/2
-	local screenY = (cZ - eZ) * (eY/cY)			* -WorldFrame:GetWidth()*factor/2
+	local screenX = (cX - eX) * (eY/cY) * WorldFrame:GetWidth()/2
+	local screenY = (cZ - eZ) * (eY/cY) * -WorldFrame:GetWidth()/2
 
 	return cY < 0, screenX, screenY, (cX^2 + cY^2 + cZ^2)^0.5
 end
@@ -93,10 +91,8 @@ updater:SetScript("OnUpdate", function()
 	camY, camZ = camY*cRoll - camZ*sRoll, camZ*cRoll + camY*sRoll
 	camX, camY = camX*cYaw - camY*sYaw, camY*cYaw + camX*sYaw
 
-	-- Blizz' viewer is by default 2 yards behind the screen, creating a field of view of 53°
-	eX, eY, eZ = 0, WorldFrame:GetHeight()/768*2, 0
-
-	factor = WorldFrame:GetHeight()/768
+	-- Blizz' viewer is 2 yards behind the screen in 4:3, creating a field of view of 53°
+	eX, eY, eZ = 0, 2/WorldFrame:GetWidth()*WorldFrame:GetHeight()*4/3, 0
 
 	for overlay in pairs(overlays) do
 		overlay:UpdatePosition()
@@ -104,4 +100,4 @@ updater:SetScript("OnUpdate", function()
 end)
 
 -- Everyone needs a test gnome, mine is in thousand needles
---Coordinator:CreateTarget("Gnome", 0.81729340553284, 0.76272523403168)
+--Coordinator.DisplayCoordinate("Gnome", 0.81729340553284, 0.76272523403168)

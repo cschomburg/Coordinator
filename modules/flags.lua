@@ -1,7 +1,7 @@
 local module = CreateFrame("Frame")
 module:Hide()
 
-local flagCoords, last = {}
+local flagTargets, last = {}
 
 module:SetScript("OnEvent", function(self)
 	if(select(2, IsInInstance()) == "pvp") then
@@ -29,11 +29,11 @@ module:SetScript("OnUpdate", function(self)
 		end
 
 		if(flagToken == "AllianceFlag") then
-			coords.r, coords.g, coords.b = 0.5, 0.5, 1
+			target.r, target.g, target.b = 0.5, 0.5, 1
 		elseif(flagToken == "HordeFlag") then
-			coords.r, coords.g, coords.b = 1, 0.5, 0.5
+			target.r, target.g, target.b = 1, 0.5, 0.5
 		else
-			coords.r, coords.g, coords.b = 1, 1, 1
+			target.r, target.g, target.b = 1, 1, 1
 		end
 
 		i = i+1
@@ -43,7 +43,7 @@ module:SetScript("OnUpdate", function(self)
 
 	if(last and last > i) then
 		for j=i+1, last do
-			Coordinator.DisableOverlay(flagCoords[j])
+			Coordinator.DisableOverlay(flagTargets[j])
 		end
 	end
 	last = i

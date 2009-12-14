@@ -18,3 +18,6 @@ types\line.lua
 types\cube.lua
 
 modules\flags.lua
+modules\quests.lua
+
+worldmapsize.lua

@@ -22,13 +22,13 @@ function Cube.CreateOverlay(x, y, z, xW, yW, zW)
 end
 
 function Cube:Enable()
-	for i, #self do
+	for i=1, #self do
 		self[i]:Enable()
 	end
 end
 
 function Cube:Disable()
-	for i, #self do
+	for i=1, #self do
 		self[i]:Disable()
 	end
 end
