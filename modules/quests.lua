@@ -12,6 +12,7 @@ module:SetScript("OnUpdate", function()
 	if(not target) then
 		target = Coordinator.DisplayCoordinate("Quest", posX, posY)
 	else
+		Coordinator.EnableOverlay(target)
 		target.x, target.y = posX, posY
 	end
 end)
