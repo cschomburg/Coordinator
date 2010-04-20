@@ -1,4 +1,4 @@
-## Interface: 30200
+## Interface: 30300
 ## Title: Coordinator
 ## Author: Cargor
 ## Version: 1.0
@@ -20,4 +20,4 @@ types\cube.lua
 modules\flags.lua
 modules\quests.lua
 
-worldmapsize.lua
+# worldmapsize.lua

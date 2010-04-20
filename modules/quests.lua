@@ -3,7 +3,7 @@ local module = CreateFrame("Frame")
 local target
 
 module:SetScript("OnUpdate", function()
-	local questID = WorldMapQuestScrollChildFrame.selected and WorldMapQuestScrollChildFrame.selected.questId
+	local questID = WORLDMAP_SETTINGS.selectedQuestId
 	if(not questID) then return target and Coordinator.DisableOverlay(target) end
 
 	local _, posX, posY= QuestPOIGetIconInfo(questID)
